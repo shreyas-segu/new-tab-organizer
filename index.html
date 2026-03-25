@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Tab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Split layout: bookmarks (left) + tools (right) -->
+      <div id="split-layout">
+        <main id="panel-bookmarks">
+          <div id="workspaces"></div>
+          <div id="bookmarks-list"></div>
+        </main>
+
+        <aside id="panel-tools">
+          <div id="tools-tabs">
+            <button class="tools-tab active" data-tool="matrix">Matrix</button>
+            <button class="tools-tab" data-tool="jwt">JWT</button>
+            <button class="tools-tab" data-tool="gen">Generator</button>
+            <button class="tools-tab" data-tool="urlcodec">URL Encode</button>
+          </div>
+          <div id="tool-matrix" class="tool-panel active">
+            <div id="matrix-grid">
+              <div class="matrix-label" data-col="1" data-row="1"></div>
+              <div
+                class="matrix-label matrix-col-header"
+                data-col="2"
+                data-row="1"
+              >
+                Urgent
+              </div>
+              <div
+                class="matrix-label matrix-col-header"
+                data-col="3"
+                data-row="1"
+              >
+                Not Urgent
+              </div>
+              <div
+                class="matrix-label matrix-row-header"
+                data-col="1"
+                data-row="2"
+              >
+                Important
+              </div>
+              <div class="matrix-quadrant" data-quadrant="1">
+                <h3>Do</h3>
+                <div class="matrix-items" data-q="1"></div>
+                <button class="matrix-add" data-q="1">+ Add</button>
+              </div>
+              <div class="matrix-quadrant" data-quadrant="2">
+                <h3>Decide</h3>
+                <div class="matrix-items" data-q="2"></div>
+                <button class="matrix-add" data-q="2">+ Add</button>
+              </div>
+              <div
+                class="matrix-label matrix-row-header"
+                data-col="1"
+                data-row="3"
+              >
+                Not Important
+              </div>
+              <div class="matrix-quadrant" data-quadrant="3">
+                <h3>Delegate</h3>
+                <div class="matrix-items" data-q="3"></div>
+                <button class="matrix-add" data-q="3">+ Add</button>
+              </div>
+              <div class="matrix-quadrant" data-quadrant="4">
+                <h3>Delete</h3>
+                <div class="matrix-items" data-q="4"></div>
+                <button class="matrix-add" data-q="4">+ Add</button>
+              </div>
+            </div>
+          </div>
+          <div id="tool-jwt" class="tool-panel">
+            <textarea
+              id="jwt-input"
+              placeholder="Paste JWT here..."
+              spellcheck="false"
+            ></textarea>
+            <div id="jwt-sig-row">
+              <input
+                type="text"
+                id="jwt-secret"
+                placeholder="Secret (HMAC) or PEM public key (RSA)"
+              />
+              <button id="jwt-clear">Clear</button>
+            </div>
+            <div id="jwt-status"></div>
+            <div id="jwt-output"></div>
+          </div>
+          <div id="tool-gen" class="tool-panel">
+            <div id="gen-actions">
+              <button id="gen-all">Generate All</button>
+              <button id="gen-clear">Clear</button>
+            </div>
+            <div id="gen-grid">
+              <div class="gen-card" data-type="email">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">Email</span>
+                  <div class="gen-card-actions">
+                    <button
+                      class="gen-mailinator"
+                      title="Open Mailinator inbox"
+                    >
+                      inbox
+                    </button>
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+              <div class="gen-card" data-type="first">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">First Name</span>
+                  <div class="gen-card-actions">
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+              <div class="gen-card" data-type="last">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">Last Name</span>
+                  <div class="gen-card-actions">
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+              <div class="gen-card" data-type="full">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">Full Name</span>
+                  <div class="gen-card-actions">
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+              <div class="gen-card" data-type="uuid">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">UUID v4</span>
+                  <div class="gen-card-actions">
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+              <div class="gen-card" data-type="cuid">
+                <div class="gen-card-header">
+                  <span class="gen-card-label">CUID</span>
+                  <div class="gen-card-actions">
+                    <button class="gen-regen" title="Regenerate">↻</button>
+                  </div>
+                </div>
+                <div class="gen-card-value"></div>
+              </div>
+            </div>
+          </div>
+          <div id="tool-urlcodec" class="tool-panel">
+            <textarea
+              id="urlcodec-input"
+              placeholder="Paste URL or text here..."
+              spellcheck="false"
+            ></textarea>
+            <div id="urlcodec-actions">
+              <button id="urlcodec-encode">Encode</button>
+              <button id="urlcodec-decode">Decode</button>
+              <button id="urlcodec-swap">Swap</button>
+              <button id="urlcodec-clear">Clear</button>
+            </div>
+            <textarea
+              id="urlcodec-output"
+              placeholder="Output..."
+              spellcheck="false"
+              readonly
+            ></textarea>
+          </div>
+        </aside>
+      </div>
+
+      <div id="help-bar">
+        <span><kbd>?</kbd> help</span>
+        <span><kbd id="kbd-cmd">Ctrl+K</kbd> commands</span>
+        <span><kbd>n</kbd> new</span>
+        <span><kbd>e</kbd> edit</span>
+        <span><kbd>f</kbd> folder</span>
+        <span><kbd>tab</kbd> next</span>
+        <span class="help-sep">|</span>
+        <span><kbd>m</kbd> matrix</span>
+        <span><kbd>j</kbd> jwt</span>
+        <span><kbd>g</kbd> gen</span>
+        <span><kbd>u</kbd> url</span>
+        <button id="settings-btn" title="Settings">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+            <path
+              d="M13.6 10a1.2 1.2 0 0 0 .24 1.32l.04.04a1.45 1.45 0 1 1-2.06 2.06l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.72 1.1v.16a1.45 1.45 0 1 1-2.9 0v-.08a1.2 1.2 0 0 0-.76-1.08 1.2 1.2 0 0 0-1.32.24l-.04.04a1.45 1.45 0 1 1-2.06-2.06l.04-.04a1.2 1.2 0 0 0 .24-1.32 1.2 1.2 0 0 0-1.1-.72h-.16a1.45 1.45 0 1 1 0-2.9h.08a1.2 1.2 0 0 0 1.08-.76 1.2 1.2 0 0 0-.24-1.32l-.04-.04a1.45 1.45 0 1 1 2.06-2.06l.04.04a1.2 1.2 0 0 0 1.32.24h.04a1.2 1.2 0 0 0 .72-1.1v-.16a1.45 1.45 0 1 1 2.9 0v.08a1.2 1.2 0 0 0 .72 1.08 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.45 1.45 0 1 1 2.06 2.06l-.04.04a1.2 1.2 0 0 0-.24 1.32v.04a1.2 1.2 0 0 0 1.1.72h.16a1.45 1.45 0 1 1 0 2.9h-.08a1.2 1.2 0 0 0-1.08.72Z"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal overlay -->
+      <div id="modal-overlay" class="hidden">
+        <div id="modal"></div>
+      </div>
+
+      <!-- Help overlay -->
+      <div id="help-overlay" class="hidden">
+        <div id="help-content">
+          <h2>Keyboard Shortcuts</h2>
+          <div id="help-shortcuts"></div>
+          <p class="help-hint">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</p>
+        </div>
+      </div>
+
+      <!-- Command palette -->
+      <div id="command-palette" class="hidden">
+        <input type="text" id="command-input" placeholder="Type a command..." />
+        <div id="command-results"></div>
+      </div>
+    </div>
+
+    <style id="custom-css"></style>
+
+    <script src="storage.js?v=2"></script>
+    <script src="keybindings.js?v=2"></script>
+    <script src="bookmarks.js?v=2"></script>
+    <script src="eisenhower.js?v=2"></script>
+    <script src="jwt.js?v=1"></script>
+    <script src="generator.js?v=1"></script>
+    <script src="urlcodec.js?v=1"></script>
+    <script src="app.js?v=2"></script>
+  </body>
+</html>
