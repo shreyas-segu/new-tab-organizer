@@ -139,6 +139,15 @@ body {
   opacity: 0.5;
 }
 
+.ws-name {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
 .ws-rename-input {
   width: 80px;
   background: var(--bg0);
@@ -216,6 +225,14 @@ body {
   color: var(--accent);
   border-color: var(--accent-dim);
   background: var(--surface);
+}
+
+.tools-tab.hidden {
+  display: none;
+}
+
+.help-tool.hidden {
+  display: none;
 }
 
 .tool-panel {
@@ -373,6 +390,8 @@ body {
 
 .bookmark-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -668,6 +687,138 @@ kbd {
   border-color: var(--text-dim);
 }
 
+/* Quick Open rule editor */
+.qo-rule {
+  display: grid;
+  grid-template-columns: 90px 130px 1fr auto;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.qo-rule input {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 11px;
+  outline: none;
+  min-width: 0;
+}
+
+.qo-rule input:focus {
+  border-color: var(--accent);
+}
+
+.qo-rule-delete {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.qo-rule-delete:hover {
+  color: var(--danger);
+  background: var(--kbd-bg);
+}
+
+.settings-add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.settings-add-btn:hover {
+  border-color: var(--text-dim);
+  color: var(--text);
+}
+
+.settings-hint,
+.settings-hint-inline {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.settings-hint {
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.settings-hint kbd {
+  font-size: 9px;
+}
+
+/* Quick Open modal preview */
+#qo-preview {
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#qo-input {
+  width: 100%;
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 13px;
+  margin-bottom: 12px;
+  outline: none;
+}
+
+#qo-input:focus {
+  border-color: var(--accent);
+}
+
+.qo-match {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition);
+}
+
+.qo-match:hover,
+.qo-match.primary {
+  background: var(--bg0);
+  border-color: var(--border);
+}
+
+.qo-name {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.qo-url {
+  font-size: 10px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qo-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+
 /* Help overlay */
 #help-overlay {
   position: fixed;
@@ -772,6 +923,14 @@ kbd {
 .command-item:hover,
 .command-item.selected {
   background: var(--surface-hover);
+}
+
+.command-item .cmd-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .command-item .cmd-name b {
@@ -1010,6 +1169,264 @@ kbd {
 .matrix-add:hover {
   border-color: var(--text-dim);
   color: var(--text);
+}
+
+/* Daily notes */
+#tool-notes {
+  gap: 8px;
+  min-height: 0;
+}
+
+#notes-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#notes-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#notes-header button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.4;
+  transition: all var(--transition);
+}
+
+#notes-header button:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+#notes-prev,
+#notes-next {
+  width: 28px;
+  padding: 3px 0 !important;
+  text-align: center;
+}
+
+#notes-sync.icon-btn {
+  width: 32px;
+  padding: 3px 0 !important;
+  text-align: center;
+  font-size: 13px;
+}
+
+.notes-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#notes-date {
+  min-width: 110px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* LogSeq sync indicator dot */
+#notes-sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0.35;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+#notes-sync-dot.hidden {
+  display: none;
+}
+
+#notes-sync-dot.flash {
+  animation: notes-dot-flash 1.4s ease-out;
+}
+
+@keyframes notes-dot-flash {
+  0% { opacity: 0; transform: scale(0.4); }
+  30% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0.35; transform: scale(1); }
+}
+
+#notes-sync-dot.error {
+  background: var(--danger);
+  opacity: 1;
+  cursor: pointer;
+  animation: notes-dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes notes-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px transparent; }
+}
+
+#notes-carryover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--yellow) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
+  border-radius: var(--radius);
+}
+
+#notes-carryover.hidden {
+  display: none;
+}
+
+#notes-carryover button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+#notes-carryover button:hover {
+  background: var(--kbd-bg);
+}
+
+#notes-carryover button.dismiss {
+  color: var(--text-dim);
+}
+
+#notes-capture {
+  width: 100%;
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 12px;
+  outline: none;
+}
+
+#notes-capture:focus {
+  border-color: var(--accent);
+}
+
+#notes-editor {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.7;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+}
+
+#notes-editor:focus {
+  border-color: var(--accent);
+}
+
+/* Standup modal */
+#standup-summary {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+#standup-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.jira-chip {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  color: var(--accent);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.jira-chip:hover {
+  border-color: var(--accent-dim);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.chip-count {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+/* LogSeq sync status */
+#logseq-io {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+#logseq-io button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 11px;
+  transition: all var(--transition);
+}
+
+#logseq-io button:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+.ls-ok {
+  color: var(--green);
+}
+
+.ls-warn {
+  color: var(--yellow);
+}
+
+.ls-folder {
+  color: var(--text);
+}
+
+#logseq-io .settings-hint-inline {
+  color: var(--text-dim);
 }
 
 /* JWT decoder */
@@ -1380,11 +1797,98 @@ kbd {
   padding: 8px 12px;
   font-size: 11px;
   color: var(--text-dim);
-  z-index: 50;
+  z-index: 300;
   opacity: 0;
   transition: opacity var(--transition);
 }
 
 .keybinding-hint.visible {
   opacity: 1;
+}
+
+/* Toast notifications */
+#toast {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text);
+  z-index: 250;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+#toast.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#toast button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+#toast button:hover {
+  background: var(--kbd-bg);
+}
+
+/* Drag & drop */
+.bookmark-item,
+.folder-group-header,
+.matrix-item {
+  -webkit-user-drag: element;
+}
+
+.bookmark-item.dragging,
+.folder-group-header.dragging,
+.matrix-item.dragging {
+  opacity: 0.4;
+}
+
+.drop-target {
+  outline: 2px dashed var(--accent) !important;
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+}
+
+/* Matrix item selection */
+.matrix-item.selected {
+  background: var(--surface-hover);
+  outline: 1px solid var(--accent-dim);
+}
+
+/* Command palette extras */
+.cmd-key-spacer {
+  min-width: 22px;
+  flex-shrink: 0;
+}
+
+.cmd-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
+.cmd-desc.dim {
+  opacity: 0.7;
 }

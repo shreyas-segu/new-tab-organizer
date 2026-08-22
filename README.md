@@ -2,6 +2,36 @@
 
 A keyboard-driven bookmark organizer and Eisenhower matrix for Chrome.
 
+## Features
+
+- **Bookmarks** with folders, auto-suggested two-key keybindings, and drag & drop or `Shift+Arrow` reordering
+- **Eisenhower matrix** for tasks with due dates, cross-quadrant drag & drop, and keyboard navigation
+- **Quick Open** (`o`) — type `PROJ-123` or `owner/repo` and jump straight to your Jira instance / GitHub. Fully configurable with regex rules in Settings (each rule maps a pattern to a URL template containing `{query}`)
+- **Daily notes** (`t`) — markdown-first journal per day with four sections: Daily Log, Tasks, Meetings, Follow-ups. Quick-capture bar routes by prefix: plain text → daily log, `x` → tasks, `@` → meetings (timestamped), `+` → follow-ups. Open follow-ups carry over to the next day automatically. **Standup button** generates a copy-paste summary of the **previous work day** (most recent day with notes) and lists every Jira issue key touched (click to copy). Notes are plain markdown (`[[wiki-links]]`, `#tags` work in LogSeq exports)
+- **LogSeq sync** — connect a folder in Settings and every save is pushed one-way to `journals/YYYY_MM_DD.md` inside it, written in LogSeq's native list format so files render and round-trip perfectly. The **Sync button** in the notes panel pulls the journal file for the viewed day verbatim, replacing local content (with a 5-second undo). The folder handle persists across sessions (reconnect if Chrome drops permission)
+- **Command palette** (`Ctrl/⌘+K`) with fuzzy search over all actions, bookmarks, and tasks
+- **JWT decoder** — decode payloads and verify HS*/RS*/PS*/ES* signatures
+- **Test data generator** — emails (with Mailinator inbox links), names, UUIDs, CUIDs; click to copy
+- **URL encode/decode** tool
+- **Workspaces** — multiple bookmark sets switchable by number key; double-click to rename, right-click to delete (with undo)
+- **Themes** — dark/light/system plus user-defined custom CSS
+- Everything deletes are undoable via toast for 5 seconds
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `n` / `f` | New bookmark / folder |
+| `e` / `d` | Edit / delete selection |
+| `Tab` / `Shift+Tab` | Select next / previous item |
+| `Enter` | Open selected bookmark / toggle task |
+| `Shift+↑↓` | Move item within its container |
+| `Shift+←→` | Move item between folders/quadrants |
+| `o` | Quick Open — Jira issue, GitHub repo, etc. |
+| `m` / `t` / `j` / `g` / `u` | Switch tool panel |
+| `Ctrl/⌘+K` | Command palette |
+| `?` | Full shortcut help |
+
 ## Installation
 
 1. Open Chrome and navigate to `chrome://extensions`

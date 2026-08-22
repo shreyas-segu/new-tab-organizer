@@ -4,7 +4,10 @@ const Keys = {
   _hint: null,
   _pendingKey: null,
   _pendingTimer: null,
-  _PENDING_TIMEOUT: 100,
+  _PENDING_TIMEOUT: 500,
+  // First characters of registered two-key combos. Only these are
+  // buffered on first press; everything else fires immediately.
+  _prefixes: new Set(),
 
   init() {
     document.addEventListener('keydown', (e) => this._handle(e));
@@ -16,6 +19,18 @@ const Keys = {
   on(fn) {
     this._listeners.push(fn);
     return () => { this._listeners = this._listeners.filter(l => l !== fn); };
+  },
+
+  setPrefixes(prefixes) {
+    this._prefixes = new Set(prefixes);
+  },
+
+  isPrefix(key) {
+    return this._prefixes.has(key);
+  },
+
+  async updatePrefixes() {
+    this.setPrefixes(await DB.getComboPrefixes());
   },
 
   _tryMatch(key) {
@@ -42,7 +57,7 @@ const Keys = {
 
     if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      App.toggleCommandPalette();
+      Palette.toggle();
       return;
     }
 
@@ -54,30 +69,46 @@ const Keys = {
       return;
     }
 
-    // Non-character keys (Tab, Enter, etc.) — pass directly to listeners
+    // Non-character keys (Tab, Enter, arrows, etc.) — pass directly to listeners
     if (e.key.length !== 1) {
-      this._listeners.some(fn => fn(e.key, e, this._mode));
+      this._dispatch(e.key, e);
       return;
     }
 
-    e.preventDefault();
-
+    // Two-key combo in progress?
     if (this._pendingKey) {
+      e.preventDefault();
       clearTimeout(this._pendingTimer);
-      const combo = this._pendingKey + e.key;
+      const pending = this._pendingKey;
       this._pendingKey = null;
       this._hint.classList.remove('visible');
+      const combo = pending + e.key;
 
       if (this._tryMatch(combo)) return;
 
-      // Combo didn't match, second key becomes new pending
+      // Combo didn't match: fire the second key on its own, or re-buffer
+      // it if it could start another combo.
+      if (this._prefixes.has(e.key)) {
+        this._startPending(e.key);
+      } else {
+        this._tryMatch(e.key);
+      }
+      return;
+    }
+
+    // Buffer only keys that may begin a two-key combo
+    if (this._prefixes.has(e.key)) {
+      e.preventDefault();
       this._startPending(e.key);
       return;
     }
 
-    // Always buffer first — this allows two-letter combos to take priority
-    // over action keys (n, f, etc.) when a combo starting with that key exists
-    this._startPending(e.key);
+    e.preventDefault();
+    this._tryMatch(e.key);
+  },
+
+  _dispatch(key, event) {
+    this._listeners.some(fn => fn(key, event, this._mode));
   },
 
   _startPending(key) {
@@ -115,18 +146,21 @@ const Keys = {
   async _renderHelp() {
     const container = document.getElementById('help-shortcuts');
     const keys = await DB.getAllKeys();
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const modKey = isMac ? '⌘' : 'Ctrl';
+    const modKey = Util.modKey();
     const shortcuts = [
       { keys: ['?'], desc: 'Toggle help' },
       { keys: [modKey, 'K'], desc: 'Command palette' },
       { keys: ['n'], desc: 'New bookmark' },
       { keys: ['e'], desc: 'Edit selected' },
       { keys: ['f'], desc: 'New folder' },
+      { keys: ['t'], desc: 'Daily notes' },
+      { keys: ['o'], desc: 'Quick open (Jira/GitHub)' },
       { keys: ['Tab'], desc: 'Select next item' },
       { keys: ['Shift+Tab'], desc: 'Select previous item' },
-      { keys: ['Enter'], desc: 'Open selected item' },
+      { keys: ['Enter'], desc: 'Open selected / toggle' },
       { keys: ['d'], desc: 'Delete selected' },
+      { keys: ['Shift+↑↓'], desc: 'Move selected item' },
+      { keys: ['Shift+←→'], desc: 'Move between folders/quadrants' },
       { keys: ['Esc'], desc: 'Close overlay / cancel' },
     ];
 
@@ -143,7 +177,11 @@ const Keys = {
     for (const s of [...shortcuts, ...bindingShortcuts]) {
       const row = document.createElement('div');
       row.className = 'shortcut-keys';
-      row.innerHTML = s.keys.map(k => `<kbd>${k}</kbd>`).join('');
+      s.keys.forEach(k => {
+        const kbd = document.createElement('kbd');
+        kbd.textContent = k;
+        row.appendChild(kbd);
+      });
       const desc = document.createElement('div');
       desc.className = 'shortcut-desc';
       desc.textContent = s.desc;

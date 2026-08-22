@@ -11,7 +11,11 @@ const UrlCodec = {
     this._decodeBtn.addEventListener('click', () => this._decode());
     this._swapBtn.addEventListener('click', () => this._swap());
     this._clearBtn.addEventListener('click', () => this._clear());
-    this._input.addEventListener('input', () => this._autoDecode());
+    // Auto-detect only on paste — typing '%' mid-word would otherwise
+    // flip the tool into decode mode unexpectedly
+    this._input.addEventListener('paste', () => {
+      setTimeout(() => this._autoDecode(), 0);
+    });
   },
 
   _encode() {

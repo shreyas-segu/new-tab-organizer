@@ -1,4 +1,6 @@
 const JWT = {
+  _sigRequestId: 0,
+
   init() {
     this._input = document.getElementById('jwt-input');
     this._secret = document.getElementById('jwt-secret');
@@ -64,7 +66,7 @@ const JWT = {
 
     this._output.innerHTML = `
       <div class="jwt-section">
-        <div class="jwt-section-label">Header <span class="jwt-algo">${this._escape(headerObj.alg || 'none')}</span></div>
+        <div class="jwt-section-label">Header <span class="jwt-algo">${Util.escape(headerObj.alg || 'none')}</span></div>
         <pre class="jwt-json">${this._syntaxHighlight(JSON.stringify(headerObj, null, 2))}</pre>
       </div>
       <div class="jwt-section">
@@ -74,7 +76,7 @@ const JWT = {
       </div>
       <div class="jwt-section">
         <div class="jwt-section-label">Signature</div>
-        <div class="jwt-signature">${this._escape(parts[2])}</div>
+        <div class="jwt-signature">${Util.escape(parts[2])}</div>
       </div>
     `;
 
@@ -93,6 +95,9 @@ const JWT = {
 
     const parts = token.split('.');
     if (parts.length !== 3) return;
+
+    // Guard against out-of-order results while typing
+    const requestId = ++this._sigRequestId;
 
     let headerObj;
     try {
@@ -114,6 +119,8 @@ const JWT = {
         error = 'Algorithm is "none" — no signature to verify';
       } else if (alg.startsWith('RS') || alg.startsWith('PS')) {
         valid = await this._verifyRSA(parts, alg, secret);
+      } else if (alg.startsWith('ES')) {
+        valid = await this._verifyECDSA(parts, alg, secret);
       } else {
         error = `Unsupported algorithm: ${alg}`;
       }
@@ -121,13 +128,15 @@ const JWT = {
       error = e.message;
     }
 
+    if (requestId !== this._sigRequestId) return;
+
     const existing = this._status.querySelector('.jwt-sig-result');
     if (existing) existing.remove();
 
     const el = document.createElement('div');
     el.className = 'jwt-sig-result';
     if (error) {
-      el.innerHTML = `<span class="jwt-sig-warn">${this._escape(error)}</span>`;
+      el.innerHTML = `<span class="jwt-sig-warn">${Util.escape(error)}</span>`;
     } else if (valid) {
       el.innerHTML = '<span class="jwt-sig-valid">Signature VALID</span>';
     } else {
@@ -157,9 +166,13 @@ const JWT = {
   },
 
   async _verifyRSA(parts, alg, pem) {
+    if (/PRIVATE KEY/.test(pem)) {
+      throw new Error('Private keys cannot verify signatures — paste the PUBLIC key');
+    }
+
     const cleaned = pem
-      .replace(/-----BEGIN (PUBLIC KEY|PRIVATE KEY)-----/g, '')
-      .replace(/-----END (PUBLIC KEY|PRIVATE KEY)-----/g, '')
+      .replace(/-----BEGIN (PUBLIC KEY)-----/g, '')
+      .replace(/-----END (PUBLIC KEY)-----/g, '')
       .replace(/\s/g, '');
 
     let keyData;
@@ -171,6 +184,7 @@ const JWT = {
 
     const hashMap = { RS256: 'SHA-256', RS384: 'SHA-384', RS512: 'SHA-512', PS256: 'SHA-256', PS384: 'SHA-384', PS512: 'SHA-512' };
     const hash = hashMap[alg];
+    if (!hash) throw new Error(`Unknown RSA algorithm: ${alg}`);
     const isPSS = alg.startsWith('PS');
 
     let key;
@@ -185,17 +199,84 @@ const JWT = {
         ['verify']
       );
     } catch {
-      throw new Error('Failed to import RSA key (must be SPKI public key)');
+      throw new Error('Failed to import RSA key (must be an SPKI public key)');
     }
 
     const data = new TextEncoder().encode(parts[0] + '.' + parts[1]);
     const sig = this._base64urlToArrayBuffer(parts[2]);
 
+    // RFC 7518: PSS salt length equals the hash output size
+    const saltLengths = { 'SHA-256': 32, 'SHA-384': 48, 'SHA-512': 64 };
     const algo = isPSS
-      ? { name: 'RSA-PSS', saltLength: 32 }
+      ? { name: 'RSA-PSS', saltLength: saltLengths[hash] }
       : { name: 'RSASSA-PKCS1-v1_5' };
 
     return crypto.subtle.verify(algo, key, sig, data);
+  },
+
+  async _verifyECDSA(parts, alg, pem) {
+    if (/PRIVATE KEY/.test(pem)) {
+      throw new Error('Private keys cannot verify signatures — paste the PUBLIC key');
+    }
+
+    const curves = { ES256: 'P-256', ES384: 'P-384', ES512: 'P-521' };
+    const namedCurve = curves[alg];
+    if (!namedCurve) throw new Error(`Unknown EC algorithm: ${alg}`);
+
+    const cleaned = pem
+      .replace(/-----BEGIN (PUBLIC KEY)-----/g, '')
+      .replace(/-----END (PUBLIC KEY)-----/g, '')
+      .replace(/\s/g, '');
+
+    let keyData;
+    try {
+      keyData = this._base64ToArrayBuffer(cleaned);
+    } catch {
+      throw new Error('Invalid PEM key format');
+    }
+
+    let key;
+    try {
+      key = await crypto.subtle.importKey(
+        'spki',
+        keyData,
+        { name: 'ECDSA', namedCurve },
+        false,
+        ['verify']
+      );
+    } catch {
+      throw new Error(`Failed to import EC key (must be an SPKI public key on ${namedCurve})`);
+    }
+
+    const data = new TextEncoder().encode(parts[0] + '.' + parts[1]);
+    const sigRaw = this._base64urlToArrayBuffer(parts[2]);
+    const sig = this._rawToDerSignature(sigRaw);
+
+    return crypto.subtle.verify(
+      { name: 'ECDSA', hash: namedCurve.replace('P-', 'SHA-') },
+      key,
+      sig,
+      data
+    );
+  },
+
+  // JWT EC signatures are raw r||s; WebCrypto expects DER.
+  _rawToDerSignature(raw) {
+    if (raw.byteLength % 2 !== 0) throw new Error('Invalid EC signature length');
+    const half = raw.byteLength / 2;
+    const trimLeadingZeros = (bytes) => {
+      let i = 0;
+      while (i < bytes.length - 1 && bytes[i] === 0) i++;
+      return bytes.slice(i);
+    };
+    let r = trimLeadingZeros(new Uint8Array(raw.slice(0, half)));
+    let s = trimLeadingZeros(new Uint8Array(raw.slice(half)));
+    if (r[0] & 0x80) r = new Uint8Array([0, ...r]);
+    if (s[0] & 0x80) s = new Uint8Array([0, ...s]);
+    const len = 2 + r.length + 2 + s.length;
+    return new Uint8Array([
+      0x30, len, 0x02, r.length, ...r, 0x02, s.length, ...s
+    ]);
   },
 
   _decodePart(str) {
@@ -253,7 +334,7 @@ const JWT = {
   },
 
   _syntaxHighlight(json) {
-    return this._escape(json).replace(
+    return Util.escape(json).replace(
       /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
       (match) => {
         let cls = 'jwt-num';
@@ -275,11 +356,5 @@ const JWT = {
     this._output.innerHTML = '';
     this._status.innerHTML = '';
     this._input.focus();
-  },
-
-  _escape(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
   }
 };

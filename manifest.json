@@ -1,14 +1,11 @@
 {
   "manifest_version": 3,
   "name": "New Tab Organizer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Keyboard-first new tab page with bookmark organization and tools",
   "permissions": ["storage", "favicon"],
   "chrome_url_overrides": {
     "newtab": "index.html"
-  },
-  "background": {
-    "service_worker": "background.js"
   },
   "icons": {
     "16": "icons/icon16.png",

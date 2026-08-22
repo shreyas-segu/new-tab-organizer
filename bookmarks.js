@@ -1,11 +1,12 @@
 const Bookmarks = {
-  _selected: -1,
   _items: [],
+  _selectedId: null,
 
   async render() {
     const ws = await DB.getWorkspace();
     this._items = [];
     const container = document.getElementById('bookmarks-list');
+    const selectedIndex = this._selectedIndex();
 
     if (ws.bookmarks.length === 0 && ws.folders.length === 0) {
       container.innerHTML = `
@@ -26,20 +27,20 @@ const Bookmarks = {
         this._items.push({ ...f, type: 'folder' });
         html += `
           <div class="folder-group">
-            <div class="folder-group-header${i === this._selected ? ' selected' : ''}"
+            <div class="folder-group-header${i === selectedIndex ? ' selected' : ''}"
                  data-index="${i}" data-id="${f.id}" data-type="folder">
-              <span class="folder-group-name">${this._escape(f.name)}</span>
+              <span class="folder-group-name">${Util.escape(f.name)}</span>
               <span class="folder-group-count">${f.bookmarks.length}</span>
               <span class="bookmark-actions">
                 <button class="bookmark-action" data-action="rename" title="Rename">r</button>
                 <button class="bookmark-action delete" data-action="delete" title="Delete">✕</button>
               </span>
             </div>
-            <div class="folder-group-items">
+            <div class="folder-group-items" data-folder="${f.id}">
         `;
         f.bookmarks.forEach(b => {
           const bi = this._items.length;
-          this._items.push({ ...b, folderId: f.id });
+          this._items.push({ ...b, type: 'bookmark', folderId: f.id });
           html += this._renderItem(b, bi);
         });
         html += '</div></div>';
@@ -47,16 +48,14 @@ const Bookmarks = {
       html += '</section>';
     }
 
-    // Root bookmarks row (bottom)
-    if (ws.bookmarks.length > 0) {
-      html += '<section class="bookmark-section">';
-      ws.bookmarks.forEach(b => {
-        const i = this._items.length;
-        this._items.push(b);
-        html += this._renderItem(b, i);
-      });
-      html += '</section>';
-    }
+    // Root bookmarks row (bottom) — always present as a drop target
+    html += '<section class="bookmark-section" data-folder="">';
+    ws.bookmarks.forEach(b => {
+      const i = this._items.length;
+      this._items.push({ ...b, type: 'bookmark', folderId: null });
+      html += this._renderItem(b, i);
+    });
+    html += '</section>';
 
     container.innerHTML = html;
     this._bindEvents(container);
@@ -65,21 +64,50 @@ const Bookmarks = {
 
   _renderItem(item, index) {
     const url = item.url ? this._truncateUrl(item.url) : '';
-    const domain = item.url ? this._getDomain(item.url) : '';
     return `
-      <div class="bookmark-item${index === this._selected ? ' selected' : ''}"
+      <div class="bookmark-item${index === this._selectedIndex() ? ' selected' : ''}"
            data-index="${index}" data-id="${item.id}"
-           data-url="${this._escape(item.url || '')}">
-        <span class="bookmark-key">${item.key || ''}</span>
-        <span class="bookmark-icon" data-favicon="${this._escape(domain)}"></span>
-        <span class="bookmark-name">${this._escape(item.name)}</span>
-        ${url ? `<span class="bookmark-url">${this._escape(url)}</span>` : ''}
+           draggable="true"
+           data-url="${Util.escape(item.url || '')}">
+        <span class="bookmark-key">${Util.escape(item.key || '')}</span>
+        <span class="bookmark-icon" data-favicon="${Util.escape(this._getDomain(item.url))}"></span>
+        <span class="bookmark-name">${Util.escape(item.name)}</span>
+        ${url ? `<span class="bookmark-url">${Util.escape(url)}</span>` : ''}
         <span class="bookmark-actions">
           <button class="bookmark-action" data-action="edit" title="Edit">e</button>
           <button class="bookmark-action delete" data-action="delete" title="Delete">✕</button>
         </span>
       </div>
     `;
+  },
+
+  _selected() {
+    if (!this._selectedId) return null;
+    return this._items.find(i => i.id === this._selectedId) || null;
+  },
+
+  _selectedIndex() {
+    if (!this._selectedId) return -1;
+    return this._items.findIndex(i => i.id === this._selectedId);
+  },
+
+  async _setSelectedIndex(idx) {
+    if (this._items.length === 0) return;
+    idx = Math.max(0, Math.min(idx, this._items.length - 1));
+    this._selectedId = this._items[idx].id;
+    this._updateSelectionUI();
+  },
+
+  _updateSelectionUI() {
+    const container = document.getElementById('bookmarks-list');
+    const selIdx = this._selectedIndex();
+    container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    if (selIdx === -1) return;
+    const el = container.querySelector(`[data-index="${selIdx}"]`);
+    if (el) {
+      el.classList.add('selected');
+      el.scrollIntoView({ block: 'nearest' });
+    }
   },
 
   async _loadFavicons(container) {
@@ -112,61 +140,194 @@ const Bookmarks = {
         const action = e.target.closest('[data-action]');
         if (action) {
           e.stopPropagation();
-          const idx = parseInt(el.dataset.index);
-          const item = this._items[idx];
+          const item = this._items[parseInt(el.dataset.index)];
           if (action.dataset.action === 'delete') this._delete(item);
-          if (action.dataset.action === 'edit') this.showEditBookmark(item);
+          if (action.dataset.action === 'edit') this.showBookmarkModal(item);
           return;
         }
-        const idx = parseInt(el.dataset.index);
-        this._open(this._items[idx]);
+        this._open(this._items[parseInt(el.dataset.index)]);
       });
+      this._bindDrag(el, 'bookmark');
+      this._bindItemDrop(el);
     });
 
-    // Folder headers — click to select, actions
+    // Folder headers — click to select, actions, drag to reorder
     container.querySelectorAll('.folder-group-header').forEach(el => {
       el.addEventListener('click', (e) => {
         const action = e.target.closest('[data-action]');
         if (action) {
           e.stopPropagation();
-          const idx = parseInt(el.dataset.index);
-          const item = this._items[idx];
+          const item = this._items[parseInt(el.dataset.index)];
           if (action.dataset.action === 'delete') this._delete(item);
           if (action.dataset.action === 'rename') this._rename(item);
           return;
         }
-        const idx = parseInt(el.dataset.index);
-        this._selected = idx;
-        this.render();
+        this._selectedId = this._items[parseInt(el.dataset.index)].id;
+        this._updateSelectionUI();
       });
+      this._bindDrag(el, 'folder-header');
+    });
+
+    // Drop targets for moving items into folders / root
+    container.querySelectorAll('.folder-group-items, .bookmark-section').forEach(el => {
+      this._bindContainerDrop(el);
+    });
+    container.querySelectorAll('.folder-group-header').forEach(el => {
+      this._bindFolderDrop(el);
     });
   },
 
-  _open(item) {
-    if (item.type === 'folder') return;
-    if (item.url) {
-      const data = DB._cache;
-      if (data?.openInNewTab) {
-        window.open(item.url, '_blank');
+  // --- Drag & drop ---
+
+  _bindDrag(el, kind) {
+    el.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
+      e.dataTransfer.effectAllowed = 'move';
+      const item = this._items[parseInt(el.dataset.index)];
+      e.dataTransfer.setData('text/plain', JSON.stringify({ kind, id: item.id }));
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => el.classList.remove('dragging'));
+  },
+
+  _markDropTarget(el, on) {
+    el.classList.toggle('drop-target', on);
+  },
+
+  // Drop onto a folder header: append bookmark into that folder,
+  // or reorder folders when a folder header is dragged.
+  _bindFolderDrop(header) {
+    header.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this._markDropTarget(header, true);
+    });
+    header.addEventListener('dragleave', () => this._markDropTarget(header, false));
+    header.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this._markDropTarget(header, false);
+      const payload = this._dragPayload(e);
+      if (!payload) return;
+      if (payload.kind === 'folder') {
+        await this._reorderFolders(payload.id, header.dataset.id);
       } else {
-        window.location.href = item.url;
+        await this._moveBookmarkTo(payload.id, header.dataset.id, null);
       }
-    }
+    });
+  },
+
+  // Drop into a container's empty area: append to that container.
+  _bindContainerDrop(listEl) {
+    listEl.addEventListener('dragover', (e) => {
+      if (e.target.closest('.bookmark-item')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this._markDropTarget(listEl, true);
+    });
+    listEl.addEventListener('dragleave', () => this._markDropTarget(listEl, false));
+    listEl.addEventListener('drop', async (e) => {
+      if (e.target.closest('.bookmark-item')) return;
+      e.preventDefault();
+      this._markDropTarget(listEl, false);
+      const payload = this._dragPayload(e);
+      if (!payload || payload.kind !== 'bookmark') return;
+      await this._moveBookmarkTo(payload.id, listEl.dataset.folder || null, null);
+    });
+  },
+
+  // Drop onto an item: insert the dragged bookmark before it.
+  _bindItemDrop(el) {
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      this._markDropTarget(el, true);
+    });
+    el.addEventListener('dragleave', () => this._markDropTarget(el, false));
+    el.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this._markDropTarget(el, false);
+      const payload = this._dragPayload(e);
+      if (!payload || payload.kind !== 'bookmark') return;
+      const target = this._items[parseInt(el.dataset.index)];
+      if (!target || target.id === payload.id) return;
+
+      // Index of the drop position within the target's container
+      const containerItems = this._items.filter(i =>
+        i.type === 'bookmark' && (i.folderId ?? null) === (target.folderId ?? null));
+      let insertAt = containerItems.findIndex(i => i.id === target.id);
+
+      const source = this._items.find(i => i.id === payload.id);
+      const sameContainer =
+        source && ((source.folderId ?? null) === (target.folderId ?? null));
+      if (sameContainer) {
+        const srcIdx = containerItems.findIndex(i => i.id === payload.id);
+        if (srcIdx !== -1 && srcIdx < insertAt) insertAt -= 1;
+      }
+      await this._moveBookmarkTo(payload.id, target.folderId ?? null, Math.max(0, insertAt));
+    });
+  },
+
+  _dragPayload(e) {
+    try { return JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return null; }
+  },
+
+  // Move a bookmark into a container (folder id or null for root) at an
+  // optional index. targetIndex=null appends to the end.
+  async _moveBookmarkTo(id, targetFolderId, targetIndex = null) {
+    const item = this._items.find(i => i.id === id);
+    if (!item) return;
+    const sameContainer = (item.folderId ?? null) === (targetFolderId ?? null);
+    if (sameContainer && targetIndex === null) return; // no-op drop
+
+    await DB.moveBookmark(id, item.folderId, targetFolderId,
+      sameContainer ? targetIndex : (targetIndex ?? Number.MAX_SAFE_INTEGER));
+    this._selectedId = id;
+    await App.refresh();
+    Keys.showHint('Moved');
+  },
+
+  async _reorderFolders(draggedId, targetId) {
+    const ws = await DB.getWorkspace();
+    const fromIdx = ws.folders.findIndex(f => f.id === draggedId);
+    const toIdx = ws.folders.findIndex(f => f.id === targetId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    // moveFolder takes the final-list index; removing an earlier item
+    // shifts the target position left by one
+    await DB.moveFolder(draggedId, toIdx > fromIdx ? toIdx - 1 : toIdx);
+    this._selectedId = draggedId;
+    await App.refresh();
+    Keys.showHint('Moved folder');
+  },
+
+  // --- Actions ---
+
+  _open(item) {
+    if (!item || item.type === 'folder' || !item.url) return;
+    DB.get().then(data => Util.openUrl(item.url, data.openInNewTab));
   },
 
   async _delete(item) {
+    let entry;
     if (item.type === 'folder') {
-      if (item.bookmarks && item.bookmarks.length > 0) {
-        if (!confirm(`Delete folder "${item.name}" and its ${item.bookmarks.length} bookmark(s)?`)) return;
-      }
-      await DB.deleteFolder(item.id);
+      entry = await DB.deleteFolder(item.id);
+      if (!entry) return;
+      Toast.show(`Deleted folder "${item.name}"`, {
+        actionLabel: 'Undo',
+        onAction: async () => { await DB.restoreFolder(entry); await App.refresh(); }
+      });
     } else {
-      if (!confirm(`Delete "${item.name}"?`)) return;
-      await DB.deleteBookmark(item.id, item.folderId);
+      entry = await DB.deleteBookmark(item.id, item.folderId);
+      if (!entry) return;
+      Toast.show(`Deleted "${item.name}"`, {
+        actionLabel: 'Undo',
+        onAction: async () => { await DB.restoreBookmark(entry); await App.refresh(); }
+      });
     }
-    this._selected = -1;
-    await this.render();
-    Keys.showHint(`Deleted: ${item.name}`);
+    this._selectedId = null;
+    await App.refresh();
   },
 
   async _rename(item) {
@@ -209,27 +370,32 @@ const Bookmarks = {
     input.addEventListener('keydown', onKeydown);
   },
 
-  showAddBookmark() {
+  // --- Modal (add + edit share one implementation) ---
+
+  showBookmarkModal(item = null) {
     const modal = document.getElementById('modal');
     const overlay = document.getElementById('modal-overlay');
     overlay.classList.remove('hidden');
+
+    const isEdit = !!item;
 
     const ws = DB._cache ? DB._cache.workspaces[DB._cache.activeWorkspace] : null;
     let folderOptions = `<option value="">Root (no folder)</option>`;
     if (ws) {
       ws.folders.forEach(f => {
-        folderOptions += `<option value="${f.id}">${this._escape(f.name)}</option>`;
+        const sel = f.id === item?.folderId ? ' selected' : '';
+        folderOptions += `<option value="${f.id}"${sel}>${Util.escape(f.name)}</option>`;
       });
     }
 
     modal.innerHTML = `
-      <h3>New Bookmark</h3>
-      <input type="text" id="bm-name" placeholder="Name" autofocus>
-      <input type="url" id="bm-url" placeholder="https://..." required>
+      <h3>${isEdit ? 'Edit Bookmark' : 'New Bookmark'}</h3>
+      <input type="text" id="bm-name" placeholder="Name" value="${Util.escape(item?.name || '')}" autofocus>
+      <input type="url" id="bm-url" placeholder="https://..." value="${Util.escape(item?.url || '')}" required>
       <select id="bm-folder">${folderOptions}</select>
       <div id="bm-key-suggestion">
         <span class="key-label">Keybinding:</span>
-        <input type="text" id="bm-key" placeholder="auto" maxlength="2">
+        <input type="text" id="bm-key" placeholder="auto" value="${Util.escape(item?.key || '')}" maxlength="2">
         <span id="bm-key-auto" class="key-auto"></span>
       </div>
       <div id="bm-error" class="modal-error hidden"></div>
@@ -260,9 +426,9 @@ const Bookmarks = {
     };
 
     nameInput.addEventListener('input', updateSuggestion);
+    if (!isEdit) updateSuggestion();
 
     const close = () => overlay.classList.add('hidden');
-
     const showError = (msg) => {
       errorEl.textContent = msg;
       errorEl.classList.remove('hidden');
@@ -271,7 +437,7 @@ const Bookmarks = {
     const save = async () => {
       const name = nameInput.value.trim();
       const url = urlInput.value.trim();
-      const key = keyInput.value.trim() || null;
+      const key = (keyInput.value.trim().toLowerCase()) || null;
       const folderId = folderSelect.value || null;
 
       if (!name) { nameInput.focus(); showError('Name is required'); return; }
@@ -286,112 +452,32 @@ const Bookmarks = {
         return;
       }
 
-      await DB.addBookmark({ name, url: fullUrl, folderId, keybinding: key });
-      close();
-      await this.render();
-      Keys.showHint(`Added: ${name}`);
-    };
-
-    document.getElementById('bm-save').addEventListener('click', save);
-    document.getElementById('bm-cancel').addEventListener('click', close);
-    nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); urlInput.focus(); } });
-    urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-    folderSelect.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-    keyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-  },
-
-  showEditBookmark(item) {
-    const modal = document.getElementById('modal');
-    const overlay = document.getElementById('modal-overlay');
-    overlay.classList.remove('hidden');
-
-    const ws = DB._cache ? DB._cache.workspaces[DB._cache.activeWorkspace] : null;
-    let folderOptions = `<option value="">Root (no folder)</option>`;
-    if (ws) {
-      ws.folders.forEach(f => {
-        const sel = f.id === item.folderId ? ' selected' : '';
-        folderOptions += `<option value="${f.id}"${sel}>${this._escape(f.name)}</option>`;
-      });
-    }
-
-    modal.innerHTML = `
-      <h3>Edit Bookmark</h3>
-      <input type="text" id="bm-name" placeholder="Name" value="${this._escape(item.name)}" autofocus>
-      <input type="url" id="bm-url" placeholder="https://..." value="${this._escape(item.url || '')}" required>
-      <select id="bm-folder">${folderOptions}</select>
-      <div id="bm-key-suggestion">
-        <span class="key-label">Keybinding:</span>
-        <input type="text" id="bm-key" placeholder="auto" value="${this._escape(item.key || '')}" maxlength="2">
-        <span id="bm-key-auto" class="key-auto"></span>
-      </div>
-      <div id="bm-error" class="modal-error hidden"></div>
-      <div class="modal-actions">
-        <button id="bm-cancel">Cancel</button>
-        <button id="bm-save" class="primary">Save</button>
-      </div>
-    `;
-
-    const nameInput = document.getElementById('bm-name');
-    const urlInput = document.getElementById('bm-url');
-    const folderSelect = document.getElementById('bm-folder');
-    const keyInput = document.getElementById('bm-key');
-    const keyAuto = document.getElementById('bm-key-auto');
-    const errorEl = document.getElementById('bm-error');
-
-    nameInput.focus();
-
-    const updateSuggestion = () => {
-      const name = nameInput.value.trim();
-      if (!name) { keyAuto.textContent = ''; return; }
-      const data = DB._cache;
-      if (!data) return;
-      const suggested = DB.suggestKey(name, data);
-      keyAuto.textContent = suggested.length === 2
-        ? `suggested: ${suggested[0]} then ${suggested[1]}`
-        : `suggested: ${suggested}`;
-    };
-
-    nameInput.addEventListener('input', updateSuggestion);
-
-    const close = () => overlay.classList.add('hidden');
-
-    const showError = (msg) => {
-      errorEl.textContent = msg;
-      errorEl.classList.remove('hidden');
-    };
-
-    const save = async () => {
-      const name = nameInput.value.trim();
-      const url = urlInput.value.trim();
-      const key = keyInput.value.trim() || null;
-      const folderId = folderSelect.value || null;
-
-      if (!name) { nameInput.focus(); showError('Name is required'); return; }
-      if (!url) { urlInput.focus(); showError('URL is required'); return; }
-
-      const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-      try {
-        new URL(fullUrl);
-      } catch {
-        urlInput.focus();
-        showError('Invalid URL');
-        return;
+      if (key && key !== (item?.key || null)) {
+        const check = DB.validateKey(key);
+        if (!check.ok) { keyInput.focus(); showError(check.error); return; }
       }
 
-      await DB.editBookmark(item.id, { name, url: fullUrl, key, folderId }, item.folderId || null);
+      if (isEdit) {
+        await DB.editBookmark(item.id, { name, url: fullUrl, key, folderId }, item.folderId || null);
+      } else {
+        await DB.addBookmark({ name, url: fullUrl, folderId, keybinding: key });
+      }
       close();
-      this._selected = -1;
-      await this.render();
-      Keys.showHint(`Updated: ${name}`);
+      this._selectedId = null;
+      await App.refresh();
+      Keys.showHint(`${isEdit ? 'Updated' : 'Added'}: ${name}`);
     };
 
     document.getElementById('bm-save').addEventListener('click', save);
     document.getElementById('bm-cancel').addEventListener('click', close);
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); urlInput.focus(); } });
-    urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-    folderSelect.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-    keyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+    [urlInput, folderSelect, keyInput].forEach(el => {
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+    });
   },
+
+  showAddBookmark() { this.showBookmarkModal(null); },
+  showEditBookmark(item) { this.showBookmarkModal(item); },
 
   showAddFolder() {
     const modal = document.getElementById('modal');
@@ -415,7 +501,7 @@ const Bookmarks = {
       if (!name) return;
       await DB.addFolder({ name });
       overlay.classList.add('hidden');
-      await this.render();
+      await App.refresh();
       Keys.showHint(`Added folder: ${name}`);
     };
 
@@ -424,53 +510,124 @@ const Bookmarks = {
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
   },
 
-  handleKey(key, event, mode) {
+  // --- Keyboard ---
+
+  handleKey(key, event, mode, opts = {}) {
     if (mode !== 'normal') return false;
     if (event && (event.ctrlKey || event.metaKey || event.altKey)) return false;
 
-    if (key === 'n') { this.showAddBookmark(); return true; }
-    if (key === 'f') { this.showAddFolder(); return true; }
+    if (key === 'n' && !event) { this.showBookmarkModal(null); return true; }
+    if (key === 'f' && !event) { this.showAddFolder(); return true; }
 
-    if (key === 'Tab' && event) {
-      if (event.shiftKey) {
-        this._selected = this._selected > 0 ? this._selected - 1 : this._items.length - 1;
-      } else {
-        this._selected = this._selected < this._items.length - 1 ? this._selected + 1 : 0;
-      }
-      this.render();
+    const selectionEnabled = opts.selection !== false;
+
+    if (selectionEnabled && event &&
+        (key === 'Tab' || (!event.shiftKey && (key === 'ArrowDown' || key === 'ArrowUp')))) {
+      event.preventDefault();
+      const back = (key === 'Tab' && event.shiftKey) || key === 'ArrowUp';
+      const cur = this._selectedIndex();
+      const next = cur === -1
+        ? (back ? this._items.length - 1 : 0)
+        : back ? cur - 1 : cur + 1;
+      this._setSelectedIndex((next + this._items.length) % Math.max(1, this._items.length));
       return true;
     }
 
-    if (key === 'Enter' && this._selected >= 0) {
-      this._open(this._items[this._selected]);
+    // Reordering / cross-container moves
+    if (selectionEnabled && event?.shiftKey && (key === 'ArrowDown' || key === 'ArrowUp')) {
+      event.preventDefault();
+      this._shiftSelected(key === 'ArrowDown' ? 1 : -1);
+      return true;
+    }
+    if (selectionEnabled && event?.shiftKey && (key === 'ArrowRight' || key === 'ArrowLeft')) {
+      event.preventDefault();
+      this._moveSelectedToContainer(key === 'ArrowRight' ? 1 : -1);
       return true;
     }
 
-    if (key === 'e' && this._selected >= 0) {
-      const item = this._items[this._selected];
-      if (item.type === 'folder') {
-        this._rename(item);
-      } else {
-        this.showEditBookmark(item);
-      }
+    if (!selectionEnabled) {
+      // Custom keybindings still work while another tool has selection
+      return this._tryCustomKey(key);
+    }
+
+    const current = this._selected();
+
+    if (key === 'Enter' && current) {
+      this._open(current);
       return true;
     }
 
-    if (key === 'd' && this._selected >= 0) {
-      this._delete(this._items[this._selected]);
+    if (key === 'e' && current) {
+      if (current.type === 'folder') this._rename(current);
+      else this.showBookmarkModal(current);
       return true;
     }
 
-    // Check for keybinding matches (single and two-letter)
-    if (key.length === 1 || key.length === 2) {
-      const item = this._items.find(i => i.key === key);
-      if (item) {
-        this._open(item);
-        return true;
-      }
+    if (key === 'd' && current) {
+      this._delete(current);
+      return true;
     }
 
+    return this._tryCustomKey(key);
+  },
+
+  _tryCustomKey(key) {
+    if (key.length !== 1 && key.length !== 2) return false;
+    const item = this._items.find(i => i.type === 'bookmark' && i.key === key);
+    if (item) {
+      this._open(item);
+      return true;
+    }
     return false;
+  },
+
+  // Shift+↑/↓ — move within container; at the boundary, spill into the
+  // adjacent container so long jumps aren't needed.
+  async _shiftSelected(dir) {
+    const item = this._selected();
+    if (!item) return;
+
+    if (item.type === 'folder') {
+      const moved = await DB.reorderFolder(item.id, dir);
+      if (moved) {
+        await App.refresh();
+        Keys.showHint('Moved folder');
+      }
+      return;
+    }
+
+    const moved = await DB.reorderBookmark(item.id, item.folderId, dir);
+    if (moved) {
+      await App.refresh();
+      return;
+    }
+
+    // Boundary: move into neighbouring container
+    await this._moveSelectedToContainer(dir);
+  },
+
+  // Containers in visual order: folders top-to-bottom, then root.
+  async _containerOrder() {
+    const ws = await DB.getWorkspace();
+    return [...ws.folders.map(f => f.id), null];
+  },
+
+  async _moveSelectedToContainer(dir) {
+    const item = this._selected();
+    if (!item || item.type !== 'bookmark') return;
+
+    const order = await this._containerOrder();
+    const curIdx = order.indexOf(item.folderId ?? null);
+    const targetIdx = curIdx + dir;
+    if (curIdx === -1 || targetIdx < 0 || targetIdx >= order.length) return;
+
+    const targetFolderId = order[targetIdx];
+    // Moving down → insert at top of next container; up → append at end of previous
+    const insertAt = dir > 0 ? 0 : Number.MAX_SAFE_INTEGER;
+    await DB.moveBookmark(item.id, item.folderId, targetFolderId, insertAt);
+    this._selectedId = item.id;
+    await App.refresh();
+    Keys.showHint('Moved');
   },
 
   _truncateUrl(url) {
@@ -480,11 +637,5 @@ const Bookmarks = {
     } catch {
       return url.slice(0, 40);
     }
-  },
-
-  _escape(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
   }
 };

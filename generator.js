@@ -11,7 +11,8 @@ const Generator = {
       const last = Generator._pick(Generator._LAST_NAMES).toLowerCase();
       const sep = Generator._pick(['.', '_', '']);
       const num = Math.random() > 0.5 ? Math.floor(Math.random() * 99) : '';
-      return `${first}${sep}${last}${num}@mailinator.com`;
+      const domain = Generator._pick(Generator._DOMAINS);
+      return `${first}${sep}${last}${num}@${domain}`;
     },
     first: function() { return Generator._pick(Generator._FIRST_NAMES); },
     last: function() { return Generator._pick(Generator._LAST_NAMES); },

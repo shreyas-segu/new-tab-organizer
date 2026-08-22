@@ -19,6 +19,7 @@
         <aside id="panel-tools">
           <div id="tools-tabs">
             <button class="tools-tab active" data-tool="matrix">Matrix</button>
+            <button class="tools-tab" data-tool="notes">Notes</button>
             <button class="tools-tab" data-tool="jwt">JWT</button>
             <button class="tools-tab" data-tool="gen">Generator</button>
             <button class="tools-tab" data-tool="urlcodec">URL Encode</button>
@@ -75,6 +76,33 @@
                 <button class="matrix-add" data-q="4">+ Add</button>
               </div>
             </div>
+          </div>
+          <div id="tool-notes" class="tool-panel">
+            <div id="notes-header">
+              <div id="notes-nav">
+                <button id="notes-prev" title="Previous day">‹</button>
+                <span id="notes-date"></span>
+                <button id="notes-next" title="Next day">›</button>
+              </div>
+              <div class="notes-actions">
+                <span id="notes-sync-dot" class="hidden"></span>
+                <button id="notes-today" class="hidden">Today</button>
+                <button id="notes-standup" title="Summarize previous work day">Standup</button>
+                <button id="notes-sync" class="icon-btn" title="Pull today's note from LogSeq (replaces local content)">⤓</button>
+              </div>
+            </div>
+            <div id="notes-carryover" class="hidden"></div>
+            <input
+              type="text"
+              id="notes-capture"
+              placeholder="plain → daily log   x → tasks   @ 10:00 meeting   + follow-up"
+              spellcheck="false"
+            />
+            <textarea
+              id="notes-editor"
+              placeholder="# Today's notes (markdown)&#10;&#10;Everything you type is saved automatically.&#10;Sections: Daily Log, Tasks, Meetings, Follow-ups&#10;[[wiki-links]] and #tags work in LogSeq exports"
+              spellcheck="false"
+            ></textarea>
           </div>
           <div id="tool-jwt" class="tool-panel">
             <textarea
@@ -189,12 +217,15 @@
         <span><kbd>n</kbd> new</span>
         <span><kbd>e</kbd> edit</span>
         <span><kbd>f</kbd> folder</span>
+        <span><kbd>o</kbd> open</span>
         <span><kbd>tab</kbd> next</span>
+        <span><kbd>⇧↑↓</kbd> move</span>
         <span class="help-sep">|</span>
-        <span><kbd>m</kbd> matrix</span>
-        <span><kbd>j</kbd> jwt</span>
-        <span><kbd>g</kbd> gen</span>
-        <span><kbd>u</kbd> url</span>
+        <span class="help-tool" data-tool="matrix"><kbd>m</kbd> matrix</span>
+        <span class="help-tool" data-tool="notes"><kbd>t</kbd> notes</span>
+        <span class="help-tool" data-tool="jwt"><kbd>j</kbd> jwt</span>
+        <span class="help-tool" data-tool="gen"><kbd>g</kbd> gen</span>
+        <span class="help-tool" data-tool="urlcodec"><kbd>u</kbd> url</span>
         <button id="settings-btn" title="Settings">
           <svg
             width="16"
@@ -237,13 +268,17 @@
 
     <style id="custom-css"></style>
 
-    <script src="storage.js?v=2"></script>
-    <script src="keybindings.js?v=2"></script>
-    <script src="bookmarks.js?v=2"></script>
-    <script src="eisenhower.js?v=2"></script>
-    <script src="jwt.js?v=1"></script>
-    <script src="generator.js?v=1"></script>
-    <script src="urlcodec.js?v=1"></script>
-    <script src="app.js?v=2"></script>
+    <script src="utils.js?v=14"></script>
+    <script src="storage.js?v=14"></script>
+    <script src="keybindings.js?v=14"></script>
+    <script src="bookmarks.js?v=14"></script>
+    <script src="eisenhower.js?v=14"></script>
+    <script src="jwt.js?v=14"></script>
+    <script src="generator.js?v=14"></script>
+    <script src="urlcodec.js?v=14"></script>
+    <script src="palette.js?v=14"></script>
+    <script src="quickopen.js?v=14"></script>
+    <script src="notes.js?v=16"></script>
+    <script src="app.js?v=14"></script>
   </body>
 </html>
