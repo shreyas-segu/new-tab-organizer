@@ -43,6 +43,9 @@ const Bookmarks = {
           this._items.push({ ...b, type: 'bookmark', folderId: f.id });
           html += this._renderItem(b, bi);
         });
+        if (f.bookmarks.length === 0) {
+          html += '<div class="folder-empty-hint">empty — drop bookmarks here</div>';
+        }
         html += '</div></div>';
       });
       html += '</section>';
@@ -51,6 +54,9 @@ const Bookmarks = {
     // Root bookmarks row (bottom) — always present as a drop target
     html += '<section class="bookmark-section" data-folder="">';
     html += '<div class="section-label">root</div>';
+    if (ws.bookmarks.length === 0 && ws.folders.length > 0) {
+      html += '<div class="folder-empty-hint">drop bookmarks here</div>';
+    }
     ws.bookmarks.forEach(b => {
       const i = this._items.length;
       this._items.push({ ...b, type: 'bookmark', folderId: null });

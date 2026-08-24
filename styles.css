@@ -291,6 +291,16 @@ body.split-dragging {
   padding: 0 12px 4px;
 }
 
+.folder-empty-hint {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  opacity: 0.7;
+}
+
 /* Folder groups — wrapping grid */
 .folder-groups {
   display: flex;
