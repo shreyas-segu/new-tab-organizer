@@ -46,7 +46,7 @@
   /* Gruvbox Light */
   --bg: #fbf1c7;
   --bg0: #fbf1c7;
-  --bg0-hard: #f9f5d7;
+  --bg0-hard: #f2e5bc;
   --bg1: #ebdbb2;
   --bg2: #d5c4a1;
   --bg3: #bdae93;
@@ -64,6 +64,10 @@
   --aqua: #427b58;
   --orange: #af3a03;
   --gray: #928374;
+
+  /* Muted text sits one step darker than dark theme's ratio on the
+     yellow background so small labels stay legible */
+  --text-dim: var(--fg3);
 }
 
 * {
