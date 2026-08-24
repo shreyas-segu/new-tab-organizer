@@ -1736,6 +1736,11 @@ kbd {
   line-height: 1.4;
 }
 
+.gen-card:not(.has-value) .gen-card-value {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
 /* URL Encode/Decode */
 #tool-urlcodec {
   gap: 8px;

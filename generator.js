@@ -87,8 +87,9 @@ const Generator = {
 
   _clearAll() {
     document.querySelectorAll('.gen-card').forEach(card => {
-      card.querySelector('.gen-card-value').textContent = '';
-      card.querySelector('.gen-card-value').dataset.value = '';
+      const valueEl = card.querySelector('.gen-card-value');
+      valueEl.textContent = 'press ↻ to generate';
+      valueEl.dataset.value = '';
       card.classList.remove('has-value');
     });
   },
