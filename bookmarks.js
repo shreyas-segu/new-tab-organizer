@@ -29,7 +29,7 @@ const Bookmarks = {
           <div class="folder-group">
             <div class="folder-group-header${i === selectedIndex ? ' selected' : ''}"
                  data-index="${i}" data-id="${f.id}" data-type="folder">
-              <span class="folder-group-name">${Util.escape(f.name)}</span>
+              <span class="folder-group-name" title="${Util.escape(f.name)}">${Util.escape(f.name)}</span>
               <span class="folder-group-count">${f.bookmarks.length}</span>
               <span class="bookmark-actions">
                 <button class="bookmark-action" data-action="rename" title="Rename">r</button>
@@ -73,7 +73,7 @@ const Bookmarks = {
            data-url="${Util.escape(item.url || '')}">
         ${item.key ? `<span class="bookmark-key"${keyTitle}>${Util.escape(item.key)}</span>` : ''}
         <span class="bookmark-icon" data-favicon="${Util.escape(this._getDomain(item.url))}"></span>
-        <span class="bookmark-name">${Util.escape(item.name)}</span>
+        <span class="bookmark-name" title="${Util.escape(item.name)} · ${Util.escape(item.url || '')}">${Util.escape(item.name)}</span>
         <span class="bookmark-actions">
           <button class="bookmark-action" data-action="edit" title="Edit">e</button>
           <button class="bookmark-action delete" data-action="delete" title="Delete">✕</button>

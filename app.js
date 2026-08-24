@@ -307,7 +307,7 @@ const App = {
     container.innerHTML = data.workspaces.map((ws, i) => `
       <button class="workspace-btn${i === data.activeWorkspace ? ' active' : ''}"
               data-index="${i}">
-        <span class="ws-name">${Util.escape(ws.name)}</span>
+        <span class="ws-name" title="${Util.escape(ws.name)}">${Util.escape(ws.name)}</span>
         ${ws.key ? `<kbd class="ws-key">${Util.escape(ws.key)}</kbd>` : ''}
       </button>
     `).join('') + `<button class="workspace-add" data-action="add">+</button>`;

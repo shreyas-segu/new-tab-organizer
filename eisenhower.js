@@ -16,7 +16,7 @@ const Eisenhower = {
              draggable="true"
              ${item.key ? `title="Press ${item.key.length === 2 ? `${Util.escape(item.key[0])} then ${Util.escape(item.key[1])}` : Util.escape(item.key)} to toggle"` : ''}>
           ${item.key ? `<span class="mi-key">${Util.escape(item.key)}</span>` : ''}
-          <span class="mi-text">${Util.escape(item.text)}</span>
+          <span class="mi-text" title="${Util.escape(item.text)}">${Util.escape(item.text)}</span>
           ${item.dueDate ? `<span class="mi-due${this._isOverdue(item.dueDate) ? ' overdue' : ''}">${this._formatDue(item.dueDate)}</span>` : ''}
           <button class="mi-delete" data-delete="${item.id}" data-q="q${q}">✕</button>
         </div>
