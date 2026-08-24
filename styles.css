@@ -396,15 +396,6 @@ body {
   white-space: nowrap;
 }
 
-.bookmark-url {
-  font-size: 11px;
-  color: var(--text-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 300px;
-}
-
 .bookmark-actions {
   display: none;
   gap: 4px;

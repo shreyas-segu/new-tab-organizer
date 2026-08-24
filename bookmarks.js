@@ -63,7 +63,6 @@ const Bookmarks = {
   },
 
   _renderItem(item, index) {
-    const url = item.url ? this._truncateUrl(item.url) : '';
     return `
       <div class="bookmark-item${index === this._selectedIndex() ? ' selected' : ''}"
            data-index="${index}" data-id="${item.id}"
@@ -72,7 +71,6 @@ const Bookmarks = {
         <span class="bookmark-key">${Util.escape(item.key || '')}</span>
         <span class="bookmark-icon" data-favicon="${Util.escape(this._getDomain(item.url))}"></span>
         <span class="bookmark-name">${Util.escape(item.name)}</span>
-        ${url ? `<span class="bookmark-url">${Util.escape(url)}</span>` : ''}
         <span class="bookmark-actions">
           <button class="bookmark-action" data-action="edit" title="Edit">e</button>
           <button class="bookmark-action delete" data-action="delete" title="Delete">✕</button>
@@ -628,14 +626,5 @@ const Bookmarks = {
     this._selectedId = item.id;
     await App.refresh();
     Keys.showHint('Moved');
-  },
-
-  _truncateUrl(url) {
-    try {
-      const u = new URL(url);
-      return u.hostname;
-    } catch {
-      return url.slice(0, 40);
-    }
   }
 };
