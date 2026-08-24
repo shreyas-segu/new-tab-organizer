@@ -182,19 +182,45 @@ body {
 /* Split layout */
 #split-layout {
   display: grid;
-  grid-template-columns: 3fr 2fr;
+  grid-template-columns: minmax(360px, 3fr) 6px 2fr;
   height: calc(100vh - 100px);
 }
 
 #panel-bookmarks {
   overflow-y: auto;
-  padding-right: 32px;
+  padding-right: 24px;
+}
+
+#split-divider {
+  cursor: col-resize;
+  position: relative;
+  border-radius: 1px;
+}
+
+#split-divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+  transition: background var(--transition);
+}
+
+#split-divider:hover::after,
+#split-divider.dragging::after {
+  background: var(--accent-dim);
+}
+
+body.split-dragging {
+  cursor: col-resize;
+  user-select: none;
 }
 
 #panel-tools {
   overflow-y: auto;
-  padding-left: 32px;
-  border-left: 1px solid var(--border);
+  padding-left: 24px;
   display: flex;
   flex-direction: column;
 }
@@ -250,7 +276,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 280px;
+  width: 100%;
 }
 
 /* Folder groups — wrapping grid */
@@ -262,8 +288,8 @@ body {
 }
 
 .folder-group {
-  width: 280px;
-  flex: none;
+  flex: 1 1 280px;
+  min-width: 280px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);

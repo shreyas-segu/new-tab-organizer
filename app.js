@@ -21,6 +21,7 @@ const App = {
     UrlCodec.init();
     Palette.init();
     Notes.init();
+    this._initSplit();
     this._bindToolsTabs();
     this._restoreActiveTool();
     this._applyEnabledTools();
@@ -414,6 +415,45 @@ const App = {
 
     input.addEventListener('blur', onBlur);
     input.addEventListener('keydown', onKeydown);
+  },
+
+  // --- Split divider ---
+
+  _initSplit() {
+    const layout = document.getElementById('split-layout');
+    const divider = document.getElementById('split-divider');
+
+    const apply = (f) => {
+      layout.style.gridTemplateColumns = `minmax(360px, ${f}fr) 6px ${1 - f}fr`;
+    };
+
+    const saved = parseFloat(localStorage.getItem('split-ratio'));
+    if (saved > 0.2 && saved < 0.8) apply(saved);
+
+    divider.addEventListener('dblclick', () => {
+      localStorage.removeItem('split-ratio');
+      layout.style.gridTemplateColumns = '';
+    });
+
+    divider.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      divider.classList.add('dragging');
+      document.body.classList.add('split-dragging');
+      const onMove = (ev) => {
+        const rect = layout.getBoundingClientRect();
+        const f = Math.min(0.75, Math.max(0.25, (ev.clientX - rect.left) / rect.width));
+        apply(f);
+        localStorage.setItem('split-ratio', f);
+      };
+      const onUp = () => {
+        divider.classList.remove('dragging');
+        document.body.classList.remove('split-dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
   },
 
   // --- Tools tabs ---
