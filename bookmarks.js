@@ -63,12 +63,15 @@ const Bookmarks = {
   },
 
   _renderItem(item, index) {
+    const keyTitle = item.key
+      ? ` title="Press ${item.key.length === 2 ? `${Util.escape(item.key[0])} then ${Util.escape(item.key[1])}` : Util.escape(item.key)} to open"`
+      : '';
     return `
       <div class="bookmark-item${index === this._selectedIndex() ? ' selected' : ''}"
            data-index="${index}" data-id="${item.id}"
            draggable="true"
            data-url="${Util.escape(item.url || '')}">
-        <span class="bookmark-key">${Util.escape(item.key || '')}</span>
+        ${item.key ? `<span class="bookmark-key"${keyTitle}>${Util.escape(item.key)}</span>` : ''}
         <span class="bookmark-icon" data-favicon="${Util.escape(this._getDomain(item.url))}"></span>
         <span class="bookmark-name">${Util.escape(item.name)}</span>
         <span class="bookmark-actions">

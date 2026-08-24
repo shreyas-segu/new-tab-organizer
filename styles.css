@@ -385,17 +385,19 @@ body.split-dragging {
 }
 
 .bookmark-key {
-  min-width: 22px;
-  height: 22px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--kbd-bg);
-  border: 1px solid var(--kbd-border);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 4px;
   font-size: 11px;
   color: var(--accent);
   flex-shrink: 0;
+  cursor: default;
 }
 
 .bookmark-icon {
@@ -1112,17 +1114,19 @@ kbd {
 }
 
 .matrix-item .mi-key {
-  min-width: 18px;
-  height: 18px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--kbd-bg);
-  border: 1px solid var(--kbd-border);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 3px;
   font-size: 10px;
   color: var(--accent);
   flex-shrink: 0;
+  cursor: default;
 }
 
 .matrix-item .mi-text {
